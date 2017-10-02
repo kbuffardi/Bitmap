@@ -48,7 +48,7 @@ formatted images with no compression and 24 bit color depth.
 into a matrix of RGB pixels. Any errors will cout but will result in an
 empty matrix (with no rows and no columns).*
 
-**@param** *name of the filename to be opened and read as a matrix of pixels*
+*parameter: name of the filename to be opened and read as a matrix of pixels*
 ---
 
 `void save(std::string)`
@@ -66,14 +66,14 @@ proper image with non-zero-size rows and consistent non-zero-size
 columns for each row. In addition, each pixel in the matrix is validated
 to have red, green, and blue components with values between 0 and 255*
 
-**@return** * boolean value of whether or not the matrix is a valid image*
+*return: boolean value of whether or not the matrix is a valid image*
 ---
 
 `std::vector <std::vector <Pixel> > toPixelMatrix()`
 
 *Provides a vector of vector of pixels representing the bitmap*
 
-**@return** *the bitmap image, represented by a matrix of RGB pixels*
+*return: the bitmap image, represented by a matrix of RGB pixels*
 ---
 
 `void fromPixelMatrix(const std::vector <std::vector <Pixel> > &)`
@@ -82,7 +82,7 @@ to have red, green, and blue components with values between 0 and 255*
 pixels. Does not validate that the new matrix of pixels is a proper
 image.*
 
-**@param** *a matrix of pixels to represent a bitmap*
+*parameter: a matrix of pixels to represent a bitmap*
 
 
     

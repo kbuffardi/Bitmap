@@ -49,6 +49,7 @@ into a matrix of RGB pixels. Any errors will cout but will result in an
 empty matrix (with no rows and no columns).*
 
 *parameter: name of the filename to be opened and read as a matrix of pixels*
+
 ---
 
 `void save(std::string)`
@@ -57,6 +58,7 @@ empty matrix (with no rows and no columns).*
 Windows BMP file with the name provided by the parameter. File extension
 is not forced but should be .bmp. Any errors will cout and will NOT 
 attempt to save the file.*
+
 ---
 
 `bool isImage()`
@@ -67,6 +69,7 @@ columns for each row. In addition, each pixel in the matrix is validated
 to have red, green, and blue components with values between 0 and 255*
 
 *return: boolean value of whether or not the matrix is a valid image*
+
 ---
 
 `std::vector <std::vector <Pixel> > toPixelMatrix()`
@@ -74,6 +77,7 @@ to have red, green, and blue components with values between 0 and 255*
 *Provides a vector of vector of pixels representing the bitmap*
 
 *return: the bitmap image, represented by a matrix of RGB pixels*
+
 ---
 
 `void fromPixelMatrix(const std::vector <std::vector <Pixel> > &)`

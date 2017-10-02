@@ -24,7 +24,7 @@ Each component is mutable using the member variables `red` `green` and `blue`.
 They should have values between 0 and 255 but this class does *not* validate
 the component values as long as they are assigned integers.
 
-*Examples of use*
+### Example of use
 
 ```
 Pixel purpleDot;
@@ -88,6 +88,38 @@ image.*
 
 *parameter: a matrix of pixels to represent a bitmap*
 
+
+### Example of use
+
+```
+#include <vector>
+#include "bitmap.h"
+
+using namespace std;
+
+int main()
+{
+  Bitmap image;
+  vector <vector <Pixel> > bmp;
+  Pixel rgb;
+
+  //read a file example.bmp and convert it to a pixel matrix
+  image.open("example.bmp");
+  bmp = image.toPixelMatrix();
+  
+
+  //take all the redness out of the top-left pixel
+  rgb = bmp[0][0];
+  rgb.red = 0; 
+
+  //put changed image back into matrix, update the bitmap and save it
+  bmp[0][0] = rgb;
+  image.fromPixelMatrix(bmp);
+  image.save("example.bmp");
+
+  return 0;
+}
+```
 
     
 

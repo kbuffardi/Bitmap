@@ -5,7 +5,7 @@
 1. Clone this repository onto your development environment
 2. Copy `bitmap.h` and `bitmap.cpp` to your project directory
 3. In your C++ program file, include the header file with 
-`#include "bitmap.cpp"`
+`#include "bitmap.h"`
 4. Declare your variables of type *Bitmap* or *Pixel*.
 
 See the guides for the Bitmap and Pixel data types below.

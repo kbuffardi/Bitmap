@@ -60,6 +60,7 @@ void Bitmap::open(std::string filename)
 	{
 		std::cout<<filename<<" could not be opened. Does it exist? "
 		         <<"Is it already open by another program?\n";
+		pixels.resize(0); //make empty if it isn't already
 	}
 	else
 	{

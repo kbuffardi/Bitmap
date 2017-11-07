@@ -55,12 +55,20 @@ struct bmpfile_dib_info
 void Bitmap::open(std::string filename)
 {
 	std::ifstream file(filename.c_str(), std::ios::in | std::ios::binary);
-
+        //clear data if already holds information
+        if( pixels.size() > 0 )
+        {
+            for(int i=0; i<pixels[i].size(); i++)
+            {
+                pixels[i].resize(0);
+            }
+            pixels.resize(0);
+        }
 	if (file.fail())
 	{
 		std::cout<<filename<<" could not be opened. Does it exist? "
 		         <<"Is it already open by another program?\n";
-		pixels.resize(0); //make empty if it isn't already
+		//pixels.resize(0); //make empty if it isn't already
 	}
 	else
 	{

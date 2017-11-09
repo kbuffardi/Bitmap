@@ -42,6 +42,8 @@ formatted images with no compression and 24 bit color depth.
 
 ### Functions
 
+#### open
+
 `void open(std::string)`
 
 *Opens a file as its name is provided and reads pixel-by-pixel the colors
@@ -50,7 +52,7 @@ empty matrix (with no rows and no columns).*
 
 *parameter: name of the filename to be opened and read as a matrix of pixels*
 
----
+#### save
 
 `void save(std::string)`
 
@@ -59,7 +61,7 @@ Windows BMP file with the name provided by the parameter. File extension
 is not forced but should be .bmp. Any errors will cout and will NOT 
 attempt to save the file.*
 
----
+#### isImage
 
 `bool isImage()`
 
@@ -70,7 +72,7 @@ to have red, green, and blue components with values between 0 and 255*
 
 *return: boolean value of whether or not the matrix is a valid image*
 
----
+#### toPixelMatrix
 
 `std::vector <std::vector <Pixel> > toPixelMatrix()`
 
@@ -78,7 +80,7 @@ to have red, green, and blue components with values between 0 and 255*
 
 *return: the bitmap image, represented by a matrix of RGB pixels*
 
----
+#### fromPixelMatrix
 
 `void fromPixelMatrix(const std::vector <std::vector <Pixel> > &)`
 

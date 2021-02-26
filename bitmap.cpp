@@ -64,20 +64,19 @@ void Bitmap::open(std::string filename)
 
 	if (file.fail())
 	{
-		std::cout<<filename<<" could not be opened. Does it exist? "
+		std::cerr<<filename<<" could not be opened. Does it exist? "
 		         <<"Is it already open by another program?\n";
-		//pixels.resize(0); //make empty if it isn't already
 	}
 	else
 	{
 		bmpfile_magic magic;
 		file.read((char*)(&magic), sizeof(magic));
-		
+
 		// Check to make sure that the first two bytes of the file are the "BM"
 		// identifier that identifies a bitmap image.
 		if (magic.magic[0] != 'B' || magic.magic[1] != 'M')
 		{
-			std::cout<<filename<<" is not in proper BMP format.\n";
+			std::cerr<<filename<<" is not in proper BMP format.\n";
 		}
 		else
 		{
@@ -99,14 +98,14 @@ void Bitmap::open(std::string filename)
 			// Only support for 24-bit images
 			if (dib_info.bits_per_pixel != 24)
 			{
-				std::cout<<filename<<" uses "<<dib_info.bits_per_pixel
+				std::cerr<<filename<<" uses "<<dib_info.bits_per_pixel
 				         <<"bits per pixel (bit depth). Bitmap only supports 24bit.\n";
 			}
 
 			// No support for compressed images
 			if (dib_info.compression != 0)
 			{
-				std::cout<<filename<<" is compressed. "
+				std::cerr<<filename<<" is compressed. "
 				         <<"Bitmap only supports uncompressed images.\n";
 			}
 
@@ -149,7 +148,7 @@ void Bitmap::open(std::string filename)
 /**
  * Saves the current image, represented by the matrix of pixels, as a
  * Windows BMP file with the name provided by the parameter. File extension
- * is not forced but should be .bmp. Any errors will cout and will NOT 
+ * is not forced but should be .bmp. Any errors will print to cerr and will NOT
  * attempt to save the file.
  *
  * @param name of the filename to be written as a bmp image
@@ -160,13 +159,13 @@ void Bitmap::save(std::string filename)
 
 	if (file.fail())
 	{
-		std::cout<<filename<<" could not be opened for editing. "
+		std::cerr<<filename<<" could not be opened for editing. "
 		         <<"Is it already open by another program or is it read-only?\n";
-		
+
 	}
 	else if( !isImage() )
 	{
-		std::cout<<"Bitmap cannot be saved. It is not a valid image.\n";
+		std::cerr<<"Bitmap cannot be saved. It is not a valid image.\n";
 	}
 	else
 	{
@@ -221,7 +220,7 @@ void Bitmap::save(std::string filename)
 		file.close();
 	}
 }
-	
+
 // ----------------------------------------------------------------------------
 /**
   * Validates whether or not the current matrix of pixels represents a
@@ -271,11 +270,11 @@ PixelMatrix Bitmap::toPixelMatrix()
 	if( isImage() )
 	{
 		return pixels;
-	}	
+	}
 	else
 	{
 		return PixelMatrix();
-	}	
+	}
 }
 
 // ----------------------------------------------------------------------------

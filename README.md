@@ -4,8 +4,8 @@
 
 1. Clone this repository onto your development environment
 2. Copy `bitmap.h` and `bitmap.cpp` to your project directory
-3. In your C++ program file, include the header file with 
-`#include "bitmap.h"`
+3. In your C++ project, include the header file with
+`#include "bitmap.h"` and include bitmap in your compilation
 4. Declare your variables of type *Bitmap* or *Pixel*.
 
 See the guides for the Bitmap and Pixel data types below.
@@ -16,7 +16,7 @@ Represents a single Pixel in the image. A Pixel has red, green, and blue
 components that are mixed to form a color. Each of these values can range
 from 0 to 255.
 
-By default, a pixel is black with 0 red, 0 green, and 0 blue. There is an 
+By default, a pixel is black with 0 red, 0 green, and 0 blue. There is an
 overloaded constructor that takes three integer arguments for the red, green,
 and blue components.
 
@@ -58,7 +58,7 @@ empty matrix (with no rows and no columns).*
 
 *Saves the current image, represented by the matrix of pixels, as a
 Windows BMP file with the name provided by the parameter. File extension
-is not forced but should be .bmp. Any errors will cout and will NOT 
+is not forced but should be .bmp. Any errors will cout and will NOT
 attempt to save the file.*
 
 #### isImage
@@ -114,11 +114,11 @@ int main()
   if( validBmp == true )
   {
     bmp = image.toPixelMatrix();
-  
+
 
     //take all the redness out of the top-left pixel
     rgb = bmp[0][0];
-    rgb.red = 0; 
+    rgb.red = 0;
 
     //put changed image back into matrix, update the bitmap and save it
     bmp[0][0] = rgb;
@@ -128,6 +128,3 @@ int main()
   return 0;
 }
 ```
-
-    
-

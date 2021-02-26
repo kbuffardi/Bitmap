@@ -51,7 +51,7 @@ class Bitmap
     /**
      * Saves the current image, represented by the matrix of pixels, as a
      * Windows BMP file with the name provided by the parameter. File extension
-     * is not forced but should be .bmp. Any errors will cout and will NOT 
+     * is not forced but should be .bmp. Any errors will cout and will NOT
      * attempt to save the file.
      *
      * @param name of the filename to be written as a bmp image
@@ -83,9 +83,7 @@ class Bitmap
      * @param a matrix of pixels to represent a bitmap
     **/
     void fromPixelMatrix(const PixelMatrix &);
-    
-};
 
-#include "bitmap.cpp"
+};
 
 #endif

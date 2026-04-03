@@ -1,5 +1,7 @@
 # C++ Bitmap header files
 
+This repo is compatible with the [cpp-container](https://github.com/ChicoState/cpp-container) Docker container.
+
 ## Getting Started
 
 1. Clone this repository onto your development environment

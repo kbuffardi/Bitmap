@@ -233,10 +233,11 @@ void Bitmap::save(std::string filename)
 bool Bitmap::isImage()
 {
 	const int height = pixels.size();
+  bool valid = true;
 
 	if( height == 0 || pixels[0].size() == 0)
 	{
-		return false;
+		valid = false;
 	}
 
 	const int width = pixels[0].size();
@@ -245,7 +246,8 @@ bool Bitmap::isImage()
 	{
 		if( pixels[row].size() != width )
 		{
-			return false;
+			valid = false;
+      break;
 		}
 		for(int column=0; column < width; column++)
 		{
@@ -253,10 +255,13 @@ bool Bitmap::isImage()
 			if( current.red > MAX_RGB || current.red < MIN_RGB ||
 				  current.green > MAX_RGB || current.green < MIN_RGB ||
 				  current.blue > MAX_RGB || current.blue < MIN_RGB )
-				return false;
+      {
+				valid = false;
+        break;
+      }
 		}
 	}
-	return true;
+	return valid;
 }
 
 // ----------------------------------------------------------------------------
@@ -267,14 +272,13 @@ bool Bitmap::isImage()
 **/
 PixelMatrix Bitmap::toPixelMatrix()
 {
+  PixelMatrix converted;
 	if( isImage() )
 	{
-		return pixels;
+		converted = pixels;
 	}
-	else
-	{
-		return PixelMatrix();
-	}
+	
+  return converted;
 }
 
 // ----------------------------------------------------------------------------

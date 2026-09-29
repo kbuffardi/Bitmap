@@ -2,6 +2,31 @@
 
 This repo is compatible with the [cpp-container](https://github.com/ChicoState/cpp-container) Docker container.
 
+## Development and releases
+
+Run the local build and test checker with:
+
+```
+./test_runner.sh
+```
+
+The Checker GitHub Actions workflow runs this command for pull requests and
+manual dispatches. Release tags run the same checker before publication.
+
+To publish a Linux release, first merge the intended commit into `master`, then
+push a version tag. The initial release tag is `v0.1`; later releases may use
+`vMAJOR.MINOR` or `vMAJOR.MINOR.PATCH` tags.
+
+```
+git tag -a v0.1 -m "Release v0.1"
+git push origin v0.1
+```
+
+The release workflow rejects tags whose commits are not reachable from
+`master`. It publishes a source ZIP containing only `bitmap.h`, `bitmap.cpp`,
+`LICENSE`, and `README.md`, plus Linux x86_64 static-library and example-binary
+assets.
+
 ## Getting Started
 
 1. Clone this repository onto your development environment

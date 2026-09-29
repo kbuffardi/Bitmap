@@ -1,0 +1,33 @@
+## AI Agent Reasoning
+
+### Context
+
+Issue #1 was revised from basic multiple-depth support to importing the common
+Windows BMP families into the existing RGB-only PixelMatrix while reporting
+discarded color information through Bitmap::isLossy().
+
+### Decisions Made
+
+- Parse fixed-width little-endian fields instead of native structs so malformed
+  files, host alignment, and host endianness cannot corrupt interpretation.
+- Decode into temporary state and commit atomically so rejected files never
+  expose partial pixels or stale lossiness.
+- Implement BI_RLE4 and BI_RLE8 directly because Microsoft documents them and
+  they require no codec dependency; keep embedded JPEG/PNG explicitly out of
+  scope.
+- Preserve stored RGB values when alpha is discarded. Mark the import lossy
+  only when at least one declared alpha sample is non-opaque.
+- Preserve numeric V4/V5 RGB values without color-profile conversion and mark
+  meaningful ignored color metadata as lossy.
+
+### Trade-offs
+
+- Known DIB header sizes are allowlisted rather than guessing unknown layouts.
+- Input and decoded-pixel caps reject extreme files in exchange for bounded
+  memory exposure.
+- Save output remains 24-bpp BI_RGB to preserve the existing public contract.
+
+### References
+
+- GitHub issue #1
+- specs/issue-1-bmp-import.md

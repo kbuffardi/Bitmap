@@ -352,6 +352,26 @@ void test_bitfields_and_alpha_loss()
         1, 1, 32, 3, std::vector<Pixel>(), rgb101010,
         std::vector<unsigned char>{0xff, 0x03, 0, 0}), true,
         "10-bit bitfields");
+
+    expect_color(open_single_pixel(make_info_fixture(
+        1, 1, 16, 3, std::vector<Pixel>(), rgb565,
+        std::vector<unsigned char>{0x1f, 0, 0, 0}, 52), false,
+        "52-byte bitfields header"), 0, 0, 255,
+        "V2 mask fields are read from the extended header");
+
+    const std::string transparent_path = write_fixture(make_info_fixture(
+        1, 1, 32, 3, std::vector<Pixel>(), argb,
+        std::vector<unsigned char>{30, 20, 10, 64}, 56));
+    Bitmap transparent;
+    transparent.open(transparent_path);
+    const std::string saved_path = "/tmp/bitmap-lossy-save.bmp";
+    transparent.save(saved_path);
+    expect(transparent.isLossy(), "save preserves source lossiness state");
+    transparent.open("/tmp/bitmap-test-does-not-exist-after-loss.bmp");
+    expect(!transparent.isLossy() && !transparent.isImage(),
+           "failed open resets prior lossiness and pixels");
+    std::remove(transparent_path.c_str());
+    std::remove(saved_path.c_str());
 }
 
 void test_color_metadata_loss()
@@ -480,6 +500,39 @@ void test_rle_commands_and_orientation()
            pixels[0][1].red == 2 && pixels[0][2].red == 3,
            "RLE4 absolute nibbles decode in high-low order");
     std::remove(path.c_str());
+
+    palette16[4] = Pixel(4, 0, 0);
+    palette16[5] = Pixel(5, 0, 0);
+    const std::vector<unsigned char> padded_rle4_absolute = {
+        0, 5, 0x12, 0x34, 0x50, 0,
+        0, 1
+    };
+    path = write_fixture(make_info_fixture(
+        5, 1, 4, 2, palette16, std::vector<unsigned long>(),
+        padded_rle4_absolute));
+    bitmap.open(path);
+    pixels = bitmap.toPixelMatrix();
+    expect(bitmap.isImage() && pixels[0][4].red == 5,
+           "RLE4 absolute data consumes word-alignment padding");
+    std::remove(path.c_str());
+}
+
+void test_unsupported_encodings()
+{
+    const unsigned long unsupported_compressions[] = {4, 5, 11};
+    for (std::size_t index = 0;
+         index < sizeof(unsupported_compressions) /
+            sizeof(unsupported_compressions[0]); ++index)
+    {
+        const std::string path = write_fixture(make_info_fixture(
+            1, 1, 24, unsupported_compressions[index], std::vector<Pixel>(),
+            std::vector<unsigned long>(), std::vector<unsigned char>{0, 0, 0, 0}));
+        Bitmap bitmap;
+        bitmap.open(path);
+        expect(!bitmap.isImage() && !bitmap.isLossy(),
+               "JPEG, PNG, and CMYK BMP encodings are rejected");
+        std::remove(path.c_str());
+    }
 }
 
 void test_save_round_trip_padding()
@@ -567,6 +620,16 @@ void test_malformed_inputs_fail_atomically()
     expect(!bitmap.isImage(), "overlapping bitfield masks are rejected");
     std::remove(path.c_str());
 
+    const std::vector<unsigned long> noncontiguous_masks = {
+        0x7001, 0x00e0, 0x001c
+    };
+    path = write_fixture(make_info_fixture(
+        1, 1, 16, 3, std::vector<Pixel>(), noncontiguous_masks,
+        std::vector<unsigned char>{0, 0, 0, 0}));
+    bitmap.open(path);
+    expect(!bitmap.isImage(), "non-contiguous bitfield masks are rejected");
+    std::remove(path.c_str());
+
     std::vector<Pixel> rle_palette(256, Pixel());
     const std::vector<unsigned char> top_down_rle = {1, 0, 0, 1};
     path = write_fixture(make_info_fixture(
@@ -589,6 +652,7 @@ int main()
     test_v5_profile_bounds();
     test_rle_imports();
     test_rle_commands_and_orientation();
+    test_unsupported_encodings();
     test_save_round_trip_padding();
     test_malformed_inputs_fail_atomically();
 

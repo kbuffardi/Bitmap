@@ -16,6 +16,7 @@ const std::uint32_t BI_RLE8 = 1;
 const std::uint32_t BI_RLE4 = 2;
 const std::uint32_t BI_BITFIELDS = 3;
 const std::uint32_t LCS_SRGB = 0x73524742;
+const std::uint64_t MAX_INPUT_BYTES = 512ULL * 1024 * 1024;
 const std::uint64_t MAX_DECODED_PIXELS = 100000000;
 
 struct Header
@@ -33,6 +34,8 @@ struct Header
     std::uint32_t green_mask;
     std::uint32_t blue_mask;
     std::uint32_t alpha_mask;
+    std::uint32_t profile_offset;
+    std::uint32_t profile_size;
     std::size_t palette_offset;
     bool core;
     bool top_down;
@@ -42,8 +45,9 @@ struct Header
         : dib_size(0), width(0), signed_height(0), height(0),
           bits_per_pixel(0), compression(BI_RGB), image_size(0),
           colors_used(0), pixel_offset(0), red_mask(0), green_mask(0),
-          blue_mask(0), alpha_mask(0), palette_offset(0), core(false),
-          top_down(false), color_metadata_lost(false)
+          blue_mask(0), alpha_mask(0), profile_offset(0), profile_size(0),
+          palette_offset(0), core(false), top_down(false),
+          color_metadata_lost(false)
     {
     }
 };
@@ -108,18 +112,27 @@ bool load_file(const std::string & filename, std::vector<unsigned char> & bytes)
     }
     file.seekg(0, std::ios::end);
     const std::streamoff length = file.tellg();
-    if (length < 0 || static_cast<std::uint64_t>(length) >
+    if (length < 0 || static_cast<std::uint64_t>(length) > MAX_INPUT_BYTES ||
+        static_cast<std::uint64_t>(length) >
             std::numeric_limits<std::size_t>::max())
     {
         return false;
     }
     file.seekg(0, std::ios::beg);
-    bytes.resize(static_cast<std::size_t>(length));
+    try
+    {
+        bytes.resize(static_cast<std::size_t>(length));
+    }
+    catch (const std::bad_alloc &)
+    {
+        return false;
+    }
     if (!bytes.empty())
     {
         file.read(reinterpret_cast<char *>(&bytes[0]), bytes.size());
+        return static_cast<std::size_t>(file.gcount()) == bytes.size();
     }
-    return file.good() || file.eof();
+    return true;
 }
 
 bool is_known_dib_size(std::uint32_t size)
@@ -256,13 +269,23 @@ bool parse_header(const std::vector<unsigned char> & bytes, Header & header)
                 (color_space != 0 && color_space != LCS_SRGB);
             if (header.dib_size == 124)
             {
-                std::uint32_t profile_size = 0;
-                if (!read_u32(bytes, 130, profile_size))
+                std::uint32_t profile_data = 0;
+                if (!read_u32(bytes, 126, profile_data) ||
+                    !read_u32(bytes, 130, header.profile_size))
                 {
                     return false;
                 }
+                const std::uint64_t profile_offset = 14ULL + profile_data;
+                if (header.profile_size != 0 &&
+                    (profile_offset < header.pixel_offset ||
+                     profile_offset > bytes.size() ||
+                     header.profile_size > bytes.size() - profile_offset))
+                {
+                    return false;
+                }
+                header.profile_offset = static_cast<std::uint32_t>(profile_offset);
                 header.color_metadata_lost = header.color_metadata_lost ||
-                    profile_size != 0;
+                    header.profile_size != 0;
             }
         }
     }
@@ -373,6 +396,11 @@ bool decode_uncompressed(const std::vector<unsigned char> & bytes,
     {
         return false;
     }
+    if (header.profile_size != 0 && header.profile_offset <
+            header.pixel_offset + data_size)
+    {
+        return false;
+    }
 
     MaskInfo red = {0, 0, 0, 0};
     MaskInfo green = {0, 0, 0, 0};
@@ -445,9 +473,9 @@ bool decode_uncompressed(const std::vector<unsigned char> & bytes,
                 }
                 else
                 {
-                    pixel = Pixel(static_cast<int>(((value >> 10) & 0x1f) * 255 / 31),
-                        static_cast<int>(((value >> 5) & 0x1f) * 255 / 31),
-                        static_cast<int>((value & 0x1f) * 255 / 31));
+                    pixel = Pixel(static_cast<int>((((value >> 10) & 0x1f) * 255 + 15) / 31),
+                        static_cast<int>((((value >> 5) & 0x1f) * 255 + 15) / 31),
+                        static_cast<int>(((value & 0x1f) * 255 + 15) / 31));
                 }
             }
             else if (header.bits_per_pixel == 24)
@@ -490,13 +518,23 @@ bool decode_rle(const std::vector<unsigned char> & bytes,
                 PixelMatrix & pixels)
 {
     std::size_t end = bytes.size();
+    if (header.profile_size != 0)
+    {
+        end = header.profile_offset;
+    }
     if (header.image_size != 0)
     {
         if (header.image_size > bytes.size() - header.pixel_offset)
         {
             return false;
         }
-        end = header.pixel_offset + header.image_size;
+        const std::size_t image_end =
+            static_cast<std::size_t>(header.pixel_offset) + header.image_size;
+        if (image_end > end)
+        {
+            return false;
+        }
+        end = image_end;
     }
     std::vector<std::vector<std::uint16_t> > indexes(
         header.height, std::vector<std::uint16_t>(header.width, 0));
@@ -607,15 +645,16 @@ bool decode_rle(const std::vector<unsigned char> & bytes,
 bool decode_bitmap(const std::vector<unsigned char> & bytes,
                    PixelMatrix & pixels, bool & lossy)
 {
-    Header header;
-    std::vector<Pixel> palette;
-    if (!parse_header(bytes, header) || !read_palette(bytes, header, palette))
-    {
-        return false;
-    }
-    lossy = header.color_metadata_lost;
     try
     {
+        Header header;
+        std::vector<Pixel> palette;
+        if (!parse_header(bytes, header) ||
+            !read_palette(bytes, header, palette))
+        {
+            return false;
+        }
+        lossy = header.color_metadata_lost;
         if (header.compression == BI_RLE4 || header.compression == BI_RLE8)
         {
             return decode_rle(bytes, header, palette, pixels);
@@ -678,12 +717,16 @@ void Bitmap::save(std::string filename)
 
     const std::uint64_t width = pixels[0].size();
     const std::uint64_t height = pixels.size();
+    if (width > static_cast<std::uint64_t>(std::numeric_limits<std::int32_t>::max()) ||
+        height > static_cast<std::uint64_t>(std::numeric_limits<std::int32_t>::max()))
+    {
+        std::cerr << "Bitmap cannot be saved because it is too large.\n";
+        return;
+    }
     const std::uint64_t stride = ((width * 24 + 31) / 32) * 4;
     const std::uint64_t image_size = stride * height;
     const std::uint64_t file_size = 54 + image_size;
-    if (width > static_cast<std::uint64_t>(std::numeric_limits<std::int32_t>::max()) ||
-        height > static_cast<std::uint64_t>(std::numeric_limits<std::int32_t>::max()) ||
-        image_size > std::numeric_limits<std::uint32_t>::max() ||
+    if (image_size > std::numeric_limits<std::uint32_t>::max() ||
         file_size > std::numeric_limits<std::uint32_t>::max())
     {
         std::cerr << "Bitmap cannot be saved because it is too large.\n";

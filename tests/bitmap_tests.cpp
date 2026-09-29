@@ -299,6 +299,12 @@ void test_direct_color_and_orientation()
         "16-bpp RGB555"), 255, 0, 0, "RGB555 expansion");
 
     expect_color(open_single_pixel(make_info_fixture(
+        1, 1, 16, 0, std::vector<Pixel>(), std::vector<unsigned long>(),
+        std::vector<unsigned char>{0x00, 0x40, 0, 0}), false,
+        "16-bpp RGB555 midpoint"), 132, 0, 0,
+        "RGB555 components are rounded to the nearest 8-bit value");
+
+    expect_color(open_single_pixel(make_info_fixture(
         1, 1, 32, 0, std::vector<Pixel>(), std::vector<unsigned long>(),
         std::vector<unsigned char>{3, 2, 1, 255}), false,
         "32-bpp BGRX"), 1, 2, 3, "reserved BGRX byte is ignored");
@@ -358,6 +364,39 @@ void test_color_metadata_loss()
         1, 1, 24, 0, std::vector<Pixel>(), std::vector<unsigned long>(),
         std::vector<unsigned char>{3, 2, 1, 0}, 108, true), true,
         "meaningful V4 metadata");
+}
+
+void test_v5_profile_bounds()
+{
+    std::vector<unsigned char> valid = make_info_fixture(
+        1, 1, 24, 0, std::vector<Pixel>(), std::vector<unsigned long>(),
+        std::vector<unsigned char>{3, 2, 1, 0}, 124, false);
+    const unsigned long profile_offset_from_dib =
+        static_cast<unsigned long>(valid.size() - 14);
+    set_u32(valid, 14 + 112, profile_offset_from_dib);
+    set_u32(valid, 14 + 116, 4);
+    valid.push_back('I');
+    valid.push_back('C');
+    valid.push_back('C');
+    valid.push_back(0);
+    set_u32(valid, 2, valid.size());
+    open_single_pixel(valid, true, "bounded V5 profile metadata");
+
+    std::vector<unsigned char> invalid = valid;
+    set_u32(invalid, 14 + 112, 0xfffffff0UL);
+    std::string path = write_fixture(invalid);
+    Bitmap bitmap;
+    bitmap.open(path);
+    expect(!bitmap.isImage() && !bitmap.isLossy(),
+           "out-of-bounds V5 profiles are rejected atomically");
+    std::remove(path.c_str());
+
+    std::vector<unsigned char> overlapping = valid;
+    set_u32(overlapping, 14 + 112, 124);
+    path = write_fixture(overlapping);
+    bitmap.open(path);
+    expect(!bitmap.isImage(), "V5 profiles cannot overlap pixel data");
+    std::remove(path.c_str());
 }
 
 void test_rle_imports()
@@ -547,6 +586,7 @@ int main()
     test_direct_color_and_orientation();
     test_bitfields_and_alpha_loss();
     test_color_metadata_loss();
+    test_v5_profile_bounds();
     test_rle_imports();
     test_rle_commands_and_orientation();
     test_save_round_trip_padding();

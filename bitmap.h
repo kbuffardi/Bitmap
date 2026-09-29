@@ -29,9 +29,9 @@ typedef std::vector < std::vector <Pixel> > PixelMatrix;
 
 // ----------------------------------------------------------------------------
 /**
- * Represents a bitmap where a grid of pixels (in row-major order)
- * describes the color of each pixel within the image. Limited to Windows BMP
- * formatted images with no compression and 24 bit color depth.
+ * Represents a bitmap where a grid of pixels (in row-major order) describes
+ * the color of each pixel. Common Windows BMP depths and encodings are read
+ * into 8-bit red, green, and blue components. Images are saved as 24-bpp BMP.
 **/
 class Bitmap
 {
@@ -41,9 +41,8 @@ class Bitmap
 
   public:
     /**
-     * Opens a file as its name is provided and reads pixel-by-pixel the colors
-     * into a matrix of RGB pixels. Any errors will cout but will result in an
-     * empty matrix (with no rows and no columns).
+     * Opens a supported Windows BMP and converts it to a matrix of RGB pixels.
+     * Any errors are written to cerr and result in an empty matrix.
      *
      * @param name of the filename to be opened and read as a matrix of pixels
     **/
@@ -52,8 +51,9 @@ class Bitmap
     /**
      * Saves the current image, represented by the matrix of pixels, as a
      * Windows BMP file with the name provided by the parameter. File extension
-     * is not forced but should be .bmp. Any errors will cout and will NOT
-     * attempt to save the file.
+     * is not forced but should be .bmp. Any errors are written to cerr and do
+     * not change the current matrix or its lossiness state. The output format
+     * is always uncompressed 24-bpp BMP.
      *
      * @param name of the filename to be written as a bmp image
     **/
@@ -71,7 +71,8 @@ class Bitmap
 
     /**
      * Reports whether opening the current image discarded color information
-     * or precision while converting it to RGB pixels.
+     * or precision while converting it to RGB pixels. Spatial dimensions are
+     * never resampled. See README.md for the complete lossiness rules.
      *
      * @return true only when the most recent successful open was lossy
     **/

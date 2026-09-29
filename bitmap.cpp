@@ -55,6 +55,7 @@ struct bmpfile_dib_info
 void Bitmap::open(std::string filename)
 {
 	std::ifstream file(filename.c_str(), std::ios::in | std::ios::binary);
+	lossy = false;
         //clear data if already holds information
         for(int i=0; i<pixels.size(); i++)
         {
@@ -235,33 +236,43 @@ bool Bitmap::isImage()
 	const int height = pixels.size();
   bool valid = true;
 
-	if( height == 0 || pixels[0].size() == 0)
+	if( height == 0 )
 	{
 		valid = false;
 	}
-
-	const int width = pixels[0].size();
-
-	for(int row=0; row < height; row++)
+	else
 	{
-		if( pixels[row].size() != width )
+		const int width = pixels[0].size();
+		if( width == 0 )
 		{
 			valid = false;
-      break;
 		}
-		for(int column=0; column < width; column++)
+
+		for(int row=0; valid && row < height; row++)
 		{
-			Pixel current = pixels[row][column];
-			if( current.red > MAX_RGB || current.red < MIN_RGB ||
-				  current.green > MAX_RGB || current.green < MIN_RGB ||
-				  current.blue > MAX_RGB || current.blue < MIN_RGB )
-      {
+			if( static_cast<int>(pixels[row].size()) != width )
+			{
 				valid = false;
-        break;
-      }
+			}
+			for(int column=0; valid && column < width; column++)
+			{
+				Pixel current = pixels[row][column];
+				if( current.red > MAX_RGB || current.red < MIN_RGB ||
+					  current.green > MAX_RGB || current.green < MIN_RGB ||
+					  current.blue > MAX_RGB || current.blue < MIN_RGB )
+				{
+					valid = false;
+				}
+			}
 		}
 	}
 	return valid;
+}
+
+// ----------------------------------------------------------------------------
+bool Bitmap::isLossy()
+{
+	return lossy;
 }
 
 // ----------------------------------------------------------------------------
@@ -292,4 +303,5 @@ PixelMatrix Bitmap::toPixelMatrix()
 void Bitmap::fromPixelMatrix(const PixelMatrix & values)
 {
 	pixels = values;
+	lossy = false;
 }

@@ -37,6 +37,7 @@ class Bitmap
 {
   private:
     PixelMatrix pixels;
+    bool lossy = false;
 
   public:
     /**
@@ -67,6 +68,14 @@ class Bitmap
      * @return boolean value of whether or not the matrix is a valid image
     **/
     bool isImage();
+
+    /**
+     * Reports whether opening the current image discarded color information
+     * or precision while converting it to RGB pixels.
+     *
+     * @return true only when the most recent successful open was lossy
+    **/
+    bool isLossy();
 
     /**
      * Provides a vector of vector of pixels representing the bitmap

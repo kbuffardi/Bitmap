@@ -536,8 +536,8 @@ bool decode_rle(const std::vector<unsigned char> & bytes,
         }
         end = image_end;
     }
-    std::vector<std::vector<std::uint16_t> > indexes(
-        header.height, std::vector<std::uint16_t>(header.width, 0));
+    pixels.assign(header.height,
+        std::vector<Pixel>(header.width, palette[0]));
     std::size_t position = header.pixel_offset;
     std::uint32_t x = 0;
     std::uint32_t y = 0;
@@ -561,7 +561,7 @@ bool decode_rle(const std::vector<unsigned char> & bytes,
                 {
                     return false;
                 }
-                indexes[y][x++] = static_cast<std::uint16_t>(palette_index);
+                pixels[header.height - 1 - y][x++] = palette[palette_index];
             }
         }
         else if (value == 0)
@@ -615,7 +615,7 @@ bool decode_rle(const std::vector<unsigned char> & bytes,
                 {
                     return false;
                 }
-                indexes[y][x++] = static_cast<std::uint16_t>(palette_index);
+                pixels[header.height - 1 - y][x++] = palette[palette_index];
             }
             position += padded_bytes;
         }
@@ -625,20 +625,6 @@ bool decode_rle(const std::vector<unsigned char> & bytes,
         return false;
     }
 
-    pixels.assign(header.height, std::vector<Pixel>(header.width));
-    for (std::uint32_t stored_row = 0; stored_row < header.height; ++stored_row)
-    {
-        const std::uint32_t target_row = header.height - 1 - stored_row;
-        for (std::int32_t column = 0; column < header.width; ++column)
-        {
-            const std::uint16_t palette_index = indexes[stored_row][column];
-            if (palette_index >= palette.size())
-            {
-                return false;
-            }
-            pixels[target_row][column] = palette[palette_index];
-        }
-    }
     return true;
 }
 

@@ -233,16 +233,16 @@ void Bitmap::save(std::string filename)
 bool Bitmap::isImage()
 {
 	const int height = pixels.size();
-  bool valid = true;
+  bool valid = height > 0;
+  int width = 0;
 
-	if( height == 0 || pixels[0].size() == 0)
+	if( valid )
 	{
-		valid = false;
+		width = pixels[0].size();
+		valid = width > 0;
 	}
 
-	const int width = pixels[0].size();
-
-	for(int row=0; row < height; row++)
+	for(int row=0; valid && row < height; row++)
 	{
 		if( pixels[row].size() != width )
 		{

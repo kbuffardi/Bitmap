@@ -13,5 +13,8 @@ compile_flags=(-std=c++11 -Wall -Wextra -Wpedantic)
 "$cxx" "${compile_flags[@]}" "$project_root/tests/bitmap_test.cpp" \
   "$project_root/bitmap.cpp" -o "$build_dir/bitmap_test"
 "$build_dir/bitmap_test"
+"$cxx" "${compile_flags[@]}" "$project_root/tests/bitmap_tests.cpp" \
+  "$project_root/bitmap.cpp" -o "$build_dir/bitmap_tests"
+"$build_dir/bitmap_tests"
 "$cxx" "${compile_flags[@]}" "$project_root/examples/bitmap_example.cpp" \
   "$project_root/bitmap.cpp" -o "$build_dir/bitmap_example"

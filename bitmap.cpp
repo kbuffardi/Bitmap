@@ -21,44 +21,65 @@ const std::uint64_t MAX_DECODED_PIXELS = 100000000;
 
 struct Header
 {
-    std::uint32_t dib_size;
-    std::int32_t width;
-    std::int32_t signed_height;
-    std::uint32_t height;
-    std::uint16_t bits_per_pixel;
-    std::uint32_t compression;
-    std::uint32_t image_size;
-    std::uint32_t colors_used;
-    std::uint32_t pixel_offset;
-    std::uint32_t red_mask;
-    std::uint32_t green_mask;
-    std::uint32_t blue_mask;
-    std::uint32_t alpha_mask;
-    std::uint32_t profile_offset;
-    std::uint32_t profile_size;
-    std::size_t palette_offset;
-    bool core;
-    bool top_down;
-    bool color_metadata_lost;
-
-    Header()
-        : dib_size(0), width(0), signed_height(0), height(0),
-          bits_per_pixel(0), compression(BI_RGB), image_size(0),
-          colors_used(0), pixel_offset(0), red_mask(0), green_mask(0),
-          blue_mask(0), alpha_mask(0), profile_offset(0), profile_size(0),
-          palette_offset(0), core(false), top_down(false),
-          color_metadata_lost(false)
-    {
-    }
+    std::uint32_t dib_size = 0;
+    std::int32_t width = 0;
+    std::int32_t signed_height = 0;
+    std::uint32_t height = 0;
+    std::uint16_t bits_per_pixel = 0;
+    std::uint32_t compression = BI_RGB;
+    std::uint32_t image_size = 0;
+    std::uint32_t colors_used = 0;
+    std::uint32_t pixel_offset = 0;
+    std::uint32_t red_mask = 0;
+    std::uint32_t green_mask = 0;
+    std::uint32_t blue_mask = 0;
+    std::uint32_t alpha_mask = 0;
+    std::uint32_t profile_offset = 0;
+    std::uint32_t profile_size = 0;
+    std::size_t palette_offset = 0;
+    bool core = false;
+    bool top_down = false;
+    bool color_metadata_lost = false;
 };
 
 struct MaskInfo
 {
-    std::uint32_t mask;
-    unsigned int shift;
-    unsigned int bits;
-    std::uint64_t maximum;
+    std::uint32_t mask = 0;
+    unsigned int shift = 0;
+    unsigned int bits = 0;
+    std::uint64_t maximum = 0;
 };
+
+PixelMatrix make_pixel_matrix(std::uint32_t height, std::int32_t width,
+                              const Pixel & fill = Pixel())
+{
+    return PixelMatrix(height,
+        std::vector<Pixel>(static_cast<std::size_t>(width), fill));
+}
+
+bool is_indexed_depth(std::uint16_t bits_per_pixel)
+{
+    return bits_per_pixel == 1 || bits_per_pixel == 4 ||
+        bits_per_pixel == 8;
+}
+
+bool is_uncompressed_depth(std::uint16_t bits_per_pixel)
+{
+    return is_indexed_depth(bits_per_pixel) || bits_per_pixel == 16 ||
+        bits_per_pixel == 24 || bits_per_pixel == 32;
+}
+
+bool is_valid_rgb_component(int component)
+{
+    return component >= MIN_RGB && component <= MAX_RGB;
+}
+
+bool is_valid_pixel(const Pixel & pixel)
+{
+    return is_valid_rgb_component(pixel.red) &&
+        is_valid_rgb_component(pixel.green) &&
+        is_valid_rgb_component(pixel.blue);
+}
 
 bool range_fits(std::size_t offset, std::size_t length, std::size_t size)
 {
@@ -146,14 +167,12 @@ bool valid_encoding(const Header & header)
     if (header.core)
     {
         return header.compression == BI_RGB &&
-            (header.bits_per_pixel == 1 || header.bits_per_pixel == 4 ||
-             header.bits_per_pixel == 8 || header.bits_per_pixel == 24);
+            (is_indexed_depth(header.bits_per_pixel) ||
+             header.bits_per_pixel == 24);
     }
     if (header.compression == BI_RGB)
     {
-        return header.bits_per_pixel == 1 || header.bits_per_pixel == 4 ||
-            header.bits_per_pixel == 8 || header.bits_per_pixel == 16 ||
-            header.bits_per_pixel == 24 || header.bits_per_pixel == 32;
+        return is_uncompressed_depth(header.bits_per_pixel);
     }
     if (header.compression == BI_RLE8)
     {
@@ -402,10 +421,10 @@ bool decode_uncompressed(const std::vector<unsigned char> & bytes,
         return false;
     }
 
-    MaskInfo red = {0, 0, 0, 0};
-    MaskInfo green = {0, 0, 0, 0};
-    MaskInfo blue = {0, 0, 0, 0};
-    MaskInfo alpha = {0, 0, 0, 0};
+    MaskInfo red;
+    MaskInfo green;
+    MaskInfo blue;
+    MaskInfo alpha;
     const bool bitfields = header.compression == BI_BITFIELDS;
     const bool has_alpha = bitfields && header.alpha_mask != 0;
     if (bitfields)
@@ -425,8 +444,7 @@ bool decode_uncompressed(const std::vector<unsigned char> & bytes,
         lossy = lossy || red.bits > 8 || green.bits > 8 || blue.bits > 8;
     }
 
-    pixels.assign(header.height,
-        std::vector<Pixel>(static_cast<std::size_t>(header.width)));
+    pixels = make_pixel_matrix(header.height, header.width);
     for (std::uint32_t stored_row = 0; stored_row < header.height; ++stored_row)
     {
         const std::size_t row_offset = header.pixel_offset +
@@ -536,8 +554,7 @@ bool decode_rle(const std::vector<unsigned char> & bytes,
         }
         end = image_end;
     }
-    pixels.assign(header.height,
-        std::vector<Pixel>(header.width, palette[0]));
+    pixels = make_pixel_matrix(header.height, header.width, palette[0]);
     std::size_t position = header.pixel_offset;
     std::uint32_t x = 0;
     std::uint32_t y = 0;
@@ -772,18 +789,15 @@ bool Bitmap::isImage()
         return false;
     }
     const std::size_t width = pixels[0].size();
-    for (std::size_t row = 0; row < pixels.size(); ++row)
+    for (PixelMatrix::const_reference row : pixels)
     {
-        if (pixels[row].size() != width)
+        if (row.size() != width)
         {
             return false;
         }
-        for (std::size_t column = 0; column < width; ++column)
+        for (const Pixel & pixel : row)
         {
-            const Pixel & current = pixels[row][column];
-            if (current.red > MAX_RGB || current.red < MIN_RGB ||
-                current.green > MAX_RGB || current.green < MIN_RGB ||
-                current.blue > MAX_RGB || current.blue < MIN_RGB)
+            if (!is_valid_pixel(pixel))
             {
                 return false;
             }

@@ -1,31 +1,20 @@
 # C++ Bitmap header files
 
-This repo is compatible with the [cpp-container](https://github.com/ChicoState/cpp-container) Docker container and requires C++11 or newer.
+This is a C++ library that enables the import/export of 24 bits per pixel (bpp) bitmaps. The bitmap is represented by a row-major order matrix (vector of vectors) and can be manipulated.
+
+**v1.0**
+
+This is the latest release, which includes support for importing a variety of BMP formats (no longer limited to 24 bpp uncompressed).
 
 ## Development and releases
 
-Run the local build and test checker with:
+This repo is compatible with the [cpp-container](https://github.com/ChicoState/cpp-container) Docker container and requires C++11 or newer.
+
+Run the local build and test checker within the docker container with:
 
 ```
 ./test_runner.sh
 ```
-
-The Checker GitHub Actions workflow runs this command for pull requests and
-manual dispatches. Release tags run the same checker before publication.
-
-To publish a Linux release, first merge the intended commit into `master`, then
-push a version tag. The initial release tag is `v0.1`; later releases may use
-`vMAJOR.MINOR` or `vMAJOR.MINOR.PATCH` tags.
-
-```
-git tag -a v0.1 -m "Release v0.1"
-git push origin v0.1
-```
-
-The release workflow rejects tags whose commits are not reachable from
-`master`. It publishes a source ZIP containing only `bitmap.h`, `bitmap.cpp`,
-`LICENSE`, and `README.md`, plus Linux x86_64 static-library and example-binary
-assets.
 
 ## Getting Started
 

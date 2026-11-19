@@ -37,9 +37,14 @@ class Bitmap
 {
   private:
     PixelMatrix pixels;
-    bool lossy = false;
+    bool lossy;
 
   public:
+    /**
+     * Constructs an empty Bitmap object with no pixels and a non-lossy state.
+     */
+    Bitmap() : lossy(false) { }
+    
     /**
      * Opens a supported Windows BMP and converts it to a matrix of RGB pixels.
      * Any errors are written to cerr and result in an empty matrix.

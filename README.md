@@ -2,9 +2,11 @@
 
 This is a C++ library that enables the import/export of 24 bits per pixel (bpp) bitmaps. The bitmap is represented by a row-major order matrix (vector of vectors) and can be manipulated.
 
-**v1.0**
+**v1.1**
 
 This is the latest release, which includes support for importing a variety of BMP formats (no longer limited to 24 bpp uncompressed).
+
+New in 1.1: default branch is now `main`
 
 ## Development and releases
 

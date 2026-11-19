@@ -43,13 +43,13 @@ jobs:
             exit 1
           fi
 
-      - name: Verify tag is on master
+      - name: Verify tag is on main
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          git fetch origin master:refs/remotes/origin/master
+          git fetch origin main:refs/remotes/origin/main
           tag_commit="$(git rev-list -n 1 "$TAG")"
-          git merge-base --is-ancestor "$tag_commit" origin/master
+          git merge-base --is-ancestor "$tag_commit" origin/main
 
       - name: Package release assets
         env:

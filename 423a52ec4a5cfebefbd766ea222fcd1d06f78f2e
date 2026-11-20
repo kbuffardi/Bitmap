@@ -1,0 +1,12 @@
+## AI Agent Reasoning
+
+### Context
+The release workflow previously only reacted to tag refs, so merged pull requests and direct pushes to main were not handled correctly.
+
+### Decisions Made
+- Trigger on pushes to main so both PR merges and direct pushes are covered.
+- Scan every commit introduced by the push so a tag on a merged commit is found.
+- Preserve the existing vMAJOR.MINOR and vMAJOR.MINOR.PATCH validation.
+
+### Trade-offs
+A squash merge does not retain the original PR commit object in main history; the release tag must point to the resulting squash commit in that case.

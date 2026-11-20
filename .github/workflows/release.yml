@@ -2,9 +2,8 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -15,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out tagged source
+      - name: Check out source
         uses: actions/checkout@v7
 
       - name: Build and test
@@ -29,41 +28,76 @@ jobs:
       contents: write
 
     steps:
-      - name: Check out tagged source and history
+      - name: Check out pushed source and history
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Validate release tag
+      - name: Find release tags in pushed commits
+        id: tags
         env:
-          TAG: ${{ github.ref_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
         run: |
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
-            echo "Release tags must be vMAJOR.MINOR or vMAJOR.MINOR.PATCH." >&2
-            exit 1
+          git fetch --force --tags origin
+
+          if [[ "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
+            commits=("$AFTER")
+          else
+            commits=()
+            while IFS= read -r commit; do
+              commits+=("$commit")
+            done < <(git rev-list "$BEFORE..$AFTER")
           fi
 
-      - name: Verify tag is on main
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          git fetch origin main:refs/remotes/origin/main
-          tag_commit="$(git rev-list -n 1 "$TAG")"
-          git merge-base --is-ancestor "$tag_commit" origin/main
+          release_tags=()
+          for commit in "${commits[@]}"; do
+            while IFS= read -r tag; do
+              [[ "$tag" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || continue
+              release_tags+=("$tag")
+            done < <(git tag --points-at "$commit")
+          done
+
+          if ((${#release_tags[@]} > 0)); then
+            sorted_tags=()
+            while IFS= read -r tag; do
+              sorted_tags+=("$tag")
+            done < <(printf '%s\n' "${release_tags[@]}" | sort -u)
+            release_tags=("${sorted_tags[@]}")
+          fi
+
+          if ((${#release_tags[@]} == 0)); then
+            echo "No release tags found in the pushed commits."
+            exit 0
+          fi
+
+          printf 'Release tags: %s\n' "${release_tags[*]}"
+          {
+            echo 'tags<<EOF'
+            printf '%s\n' "${release_tags[@]}"
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
 
       - name: Package release assets
+        if: steps.tags.outputs.tags != ''
         env:
-          TAG: ${{ github.ref_name }}
-        run: ./scripts/package-release.sh "$TAG" release-artifacts
+          RELEASE_TAGS: ${{ steps.tags.outputs.tags }}
+        run: |
+          while IFS= read -r tag; do
+            ./scripts/package-release.sh "$tag" release-artifacts
+          done <<< '${{ steps.tags.outputs.tags }}'
 
       - name: Publish GitHub release
+        if: steps.tags.outputs.tags != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          RELEASE_TAGS: ${{ steps.tags.outputs.tags }}
         run: |
-          assets=(release-artifacts/*)
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "${assets[@]}" --clobber
-          else
-            gh release create "$TAG" "${assets[@]}" --generate-notes --verify-tag
-          fi
+          while IFS= read -r tag; do
+            assets=(release-artifacts/*"$tag"*)
+            if gh release view "$tag" >/dev/null 2>&1; then
+              gh release upload "$tag" "${assets[@]}" --clobber
+            else
+              gh release create "$tag" "${assets[@]}" --generate-notes --verify-tag
+            fi
+          done <<< "$RELEASE_TAGS"
